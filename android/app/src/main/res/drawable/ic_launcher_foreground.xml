@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Note centered in icon (75%), lightning bold and clear -->
+    <group
+        android:translateX="34.5"
+        android:translateY="31.5"
+        android:scaleX="0.75"
+        android:scaleY="0.75">
+        <!-- Memo note - centered in 66x66 content area -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M8,6 L42,6 L50,14 L50,54 Q50,58 46,58 L6,58 Q2,58 2,54 L2,10 Q2,6 8,6 Z" />
+        <path
+            android:fillColor="#F1F5F9"
+            android:pathData="M42,6 L50,6 L50,14 Z" />
+        <!-- Lightning - top left, bottom right for clearer ⚡ tilt -->
+        <path
+            android:fillColor="#0F766E"
+            android:pathData="M24,12 L36,26 L32,33 L34,50 L20,36 L26,33 L24,12 Z" />
+    </group>
+</vector>

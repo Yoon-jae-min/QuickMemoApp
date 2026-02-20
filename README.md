@@ -1,97 +1,111 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# ⚡ QuickMemo
 
-# Getting Started
+> **바로 켜서, 바로 적는 메모**  
+> 화면을 가득 채우지 않는 팝업 메모장으로, 할 일이나 생각을 빠르게 기록하세요.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+---
 
-## Step 1: Start Metro
+## 📱 소개
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+QuickMemo는 **전체 화면이 아닌 작은 팝업**으로 떠서, 다른 앱을 쓰다가도 잠깐 켜서 메모할 수 있는 앱입니다.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- 홈 화면이 그대로 보이는 **투명 배경** 위에 메모창만 표시됩니다.
+- 팝업 **바깥을 누르면** 자동으로 임시 저장 후 앱이 종료됩니다.
+- 다시 열면 **임시 저장된 내용**이 그대로 복원됩니다.
 
-```sh
-# Using npm
+바쁠 때도 부담 없이 켜서 쓰고, 끄면 자연스럽게 사라지는 메모 경험을 목표로 했습니다.
+
+---
+
+## ✨ 주요 기능
+
+| 기능 | 설명 |
+|------|------|
+| **팝업 메모** | 전체 화면 대신 작은 메모창만 표시. 뒤에 보이는 화면을 가리지 않습니다. |
+| **저장** | 입력한 내용을 메모로 저장. 저장된 메모는 목록에서 확인할 수 있습니다. |
+| **목록** | 저장된 메모를 시간순으로 보기. 삭제도 목록에서 바로 가능합니다. |
+| **임시 저장** | 저장 버튼 없이 바깥을 눌러 닫아도, 그때 쓰던 내용이 자동으로 임시 저장됩니다. |
+| **전체 삭제** | 저장된 메모를 한 번에 모두 삭제 (확인 후 실행). |
+| **설정** | 앱 정보와 사용 방법 안내. |
+
+---
+
+## 🚀 설치 및 실행
+
+### 요구 사항
+
+- **Node.js** ≥ 20  
+- **React Native** 개발 환경 (Android Studio / Xcode, JDK 등)  
+- Android 에뮬레이터 또는 실기기 (USB 디버깅 또는 같은 Wi‑Fi)
+
+### 설치
+
+```bash
+cd QuickMemo
+npm install
+```
+
+### 실행
+
+**Metro 번들러 실행 (별도 터미널)**
+
+```bash
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
+**앱 실행**
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+실기기 USB 연결 시, 한 번 실행해 두면 좋습니다:
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```bash
+adb reverse tcp:8081 tcp:8081
 ```
 
-Then, and every time you update your native dependencies, run:
+---
 
-```sh
-bundle exec pod install
+## 📂 프로젝트 구조
+
+```
+QuickMemo/
+├── App.tsx                    # 앱 진입점, 배경 터치·백/홈 시 임시 저장
+├── src/
+│   ├── constants/
+│   │   └── index.ts           # 색상, 스토리지 키, 제한값
+│   ├── utils/
+│   │   └── formatDate.ts      # 상대 시간 포맷 (방금 전, n분 전 등)
+│   ├── components/
+│   │   ├── BottomSheet.tsx    # 공통 바텀시트 모달 (목록·설정)
+│   │   ├── MemoPopup/         # 메모 입력 팝업
+│   │   │   ├── index.tsx
+│   │   │   └── styles.ts
+│   │   ├── MemoList/          # 저장된 메모 목록
+│   │   │   ├── index.tsx
+│   │   │   ├── MemoListItem.tsx
+│   │   │   └── styles.ts
+│   │   └── Settings.tsx       # 설정 화면
+│   ├── services/
+│   │   └── storage.ts         # 메모·임시 저장 (AsyncStorage)
+│   └── types/
+│       └── index.ts           # Memo 등 타입 정의
+├── android/                   # Android 네이티브 (아이콘, 테마 등)
+└── package.json
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+---
 
-```sh
-# Using npm
-npm run ios
+## 🛠 기술 스택
 
-# OR using Yarn
-yarn ios
-```
+- **React Native** 0.83  
+- **TypeScript**  
+- **AsyncStorage** — 로컬 메모·임시 저장  
+- **Android** — 투명 테마, 팝업 형태 UI
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## 📄 라이선스
 
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Private

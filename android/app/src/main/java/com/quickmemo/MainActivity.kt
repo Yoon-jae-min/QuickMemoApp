@@ -1,5 +1,6 @@
 package com.quickmemo
 
+import android.os.Bundle
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -19,4 +20,11 @@ class MainActivity : ReactActivity() {
    */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
+
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    
+    // 전체 화면 + 투명 배경 (팝업 밖 터치로 종료하려면 전체 화면이어야 함)
+    window.setBackgroundDrawableResource(android.R.color.transparent)
+  }
 }
