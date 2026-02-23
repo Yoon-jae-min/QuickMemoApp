@@ -8,7 +8,7 @@ import { StatusBar, StyleSheet, useColorScheme, View, TouchableOpacity, NativeMo
 import { MemoPopup } from './src/components/MemoPopup';
 import { MemoList } from './src/components/MemoList';
 import { Settings } from './src/components/Settings';
-import { saveDraft } from './src/services/storage';
+import { saveDraft, clearDraft } from './src/services/storage';
 
 const { AppExitModule } = NativeModules;
 
@@ -43,6 +43,8 @@ function App() {
     const content = memoPopupRef.current?.getContent?.() ?? '';
     if (content.trim()) {
       await saveDraft(content);
+    } else {
+      await clearDraft();
     }
   }, []);
 
