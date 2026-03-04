@@ -9,6 +9,7 @@ import { MemoPopup } from './src/components/MemoPopup';
 import { MemoList } from './src/components/MemoList';
 import { Settings } from './src/components/Settings';
 import { saveDraft, clearDraft } from './src/services/storage';
+import { Memo } from './src/types';
 
 const { AppExitModule } = NativeModules;
 
@@ -18,8 +19,10 @@ function App() {
   const [memoPopupVisible, setMemoPopupVisible] = useState(true);
   const [memoListVisible, setMemoListVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [editingMemo, setEditingMemo] = useState<Memo | null>(null);
 
   const handleShowList = useCallback(() => {
+    setEditingMemo(null);
     setMemoPopupVisible(false);
     setMemoListVisible(true);
   }, []);
@@ -36,6 +39,12 @@ function App() {
 
   const handleCloseSettings = useCallback(() => {
     setSettingsVisible(false);
+    setMemoPopupVisible(true);
+  }, []);
+
+  const handleEditMemo = useCallback((memo: Memo) => {
+    setEditingMemo(memo);
+    setMemoListVisible(false);
     setMemoPopupVisible(true);
   }, []);
 
@@ -91,7 +100,9 @@ function App() {
           <MemoPopup
             ref={memoPopupRef}
             visible={memoPopupVisible}
+            editingMemo={editingMemo}
             onClose={(hasUnsavedContent) => {
+              setEditingMemo(null);
               if (!hasUnsavedContent && AppExitModule) {
                 AppExitModule.exitApp();
               }
@@ -104,6 +115,7 @@ function App() {
       <MemoList
         visible={memoListVisible}
         onClose={handleCloseList}
+        onSelect={handleEditMemo}
       />
       <Settings
         visible={settingsVisible}

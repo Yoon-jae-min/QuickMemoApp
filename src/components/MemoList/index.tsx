@@ -9,9 +9,10 @@ import { styles } from './styles';
 interface MemoListProps {
   visible: boolean;
   onClose: () => void;
+  onSelect: (memo: Memo) => void;
 }
 
-export const MemoList: React.FC<MemoListProps> = ({ visible, onClose }) => {
+export const MemoList: React.FC<MemoListProps> = ({ visible, onClose, onSelect }) => {
   const [memos, setMemos] = useState<Memo[]>([]);
 
   const loadMemos = useCallback(async () => {
@@ -46,8 +47,10 @@ export const MemoList: React.FC<MemoListProps> = ({ visible, onClose }) => {
   }, [loadMemos]);
 
   const renderItem = useCallback(
-    ({ item }: { item: Memo }) => <MemoListItem item={item} onDelete={handleDelete} />,
-    [handleDelete]
+    ({ item }: { item: Memo }) => (
+      <MemoListItem item={item} onDelete={handleDelete} onPress={onSelect} />
+    ),
+    [handleDelete, onSelect],
   );
 
   return (

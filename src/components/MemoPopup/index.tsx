@@ -15,6 +15,8 @@ import { styles } from './styles';
 
 export interface MemoPopupProps {
   visible: boolean;
+  /** 편집할 기존 메모. 없으면 새 메모 작성 모드 */
+  editingMemo?: Memo | null;
   onClose: (hasUnsavedContent: boolean) => void;
   onShowList: () => void;
   onShowSettings: () => void;
@@ -23,27 +25,41 @@ export interface MemoPopupProps {
 export const MemoPopup = React.forwardRef<
   { getContent: () => string },
   MemoPopupProps
->(({ visible, onClose, onShowList, onShowSettings }, ref) => {
+>(({ visible, editingMemo, onClose, onShowList, onShowSettings }, ref) => {
   const [content, setContent] = useState('');
   const [hasUnsavedContent, setHasUnsavedContent] = useState(false);
 
-  React.useImperativeHandle(ref, () => ({
-    getContent: () => content,
-  }), [content]);
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      getContent: () => content,
+    }),
+    [content],
+  );
 
   useEffect(() => {
-    if (visible) {
-      getDraft().then((d) => {
-        if (d?.content) {
-          setContent(d.content);
-          setHasUnsavedContent(true);
-        } else {
-          setContent('');
-          setHasUnsavedContent(false);
-        }
-      });
+    if (!visible) {
+      return;
     }
-  }, [visible]);
+
+    // 편집 모드인 경우: 해당 메모 내용으로 채우고 임시저장은 무시
+    if (editingMemo) {
+      setContent(editingMemo.content);
+      setHasUnsavedContent(false);
+      return;
+    }
+
+    // 새 메모 모드: 임시 저장된 내용 불러오기
+    getDraft().then((d) => {
+      if (d?.content) {
+        setContent(d.content);
+        setHasUnsavedContent(true);
+      } else {
+        setContent('');
+        setHasUnsavedContent(false);
+      }
+    });
+  }, [visible, editingMemo]);
 
   const handleContentChange = useCallback((text: string) => {
     setContent(text);
@@ -51,26 +67,46 @@ export const MemoPopup = React.forwardRef<
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (content.trim().length === 0) {
+    const trimmed = content.trim();
+    if (trimmed.length === 0) {
       Alert.alert('알림', '내용을 입력해주세요.');
       return;
     }
     try {
-      const newMemo: Memo = {
-        id: Date.now().toString(),
-        content: content.trim(),
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
+      const now = Date.now();
+
+      const base = editingMemo;
+      const newMemo: Memo = base
+        ? {
+            ...base,
+            content: trimmed,
+            updatedAt: now,
+          }
+        : {
+            id: now.toString(),
+            content: trimmed,
+            createdAt: now,
+            updatedAt: now,
+          };
+
       await saveMemo(newMemo);
-      await clearDraft();
-      setContent('');
-      setHasUnsavedContent(false);
-      Alert.alert('저장 완료', '메모가 저장되었습니다.');
+
+      if (editingMemo) {
+        // 편집 모드: 내용 유지, 임시저장 사용 안 함
+        setContent(trimmed);
+        setHasUnsavedContent(false);
+        Alert.alert('저장 완료', '메모가 수정되었습니다.');
+      } else {
+        // 새 메모 모드: 입력창 비우고 임시저장 정리
+        await clearDraft();
+        setContent('');
+        setHasUnsavedContent(false);
+        Alert.alert('저장 완료', '메모가 저장되었습니다.');
+      }
     } catch (error) {
       Alert.alert('오류', '메모 저장에 실패했습니다.');
     }
-  }, [content]);
+  }, [content, editingMemo]);
 
   const handleClear = useCallback(() => {
     Alert.alert(

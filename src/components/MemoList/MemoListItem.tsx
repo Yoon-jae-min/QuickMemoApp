@@ -7,6 +7,7 @@ import { COLORS } from '../../constants';
 interface MemoListItemProps {
   item: Memo;
   onDelete: (id: string) => void;
+  onPress: (memo: Memo) => void;
 }
 
 const styles = StyleSheet.create({
@@ -51,9 +52,13 @@ const styles = StyleSheet.create({
   },
 });
 
-export function MemoListItem({ item, onDelete }: MemoListItemProps) {
+export function MemoListItem({ item, onDelete, onPress }: MemoListItemProps) {
   return (
-    <View style={styles.memoItem}>
+    <TouchableOpacity
+      style={styles.memoItem}
+      activeOpacity={0.85}
+      onPress={() => onPress(item)}
+    >
       <Text style={styles.memoContent} numberOfLines={3}>
         {item.content}
       </Text>
@@ -63,6 +68,6 @@ export function MemoListItem({ item, onDelete }: MemoListItemProps) {
           <Text style={styles.deleteButtonText}>삭제</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
