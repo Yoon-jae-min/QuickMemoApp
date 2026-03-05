@@ -1,8 +1,9 @@
 import { Dimensions, StyleSheet } from 'react-native';
 import { COLORS } from '../../constants';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const POPUP_WIDTH = Math.min(SCREEN_WIDTH * 0.9, 500);
+const POPUP_HEIGHT = Math.min(SCREEN_HEIGHT * 0.5, 360);
 
 export const styles = StyleSheet.create({
   popupOnly: {
@@ -10,11 +11,23 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   keyboardView: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  keyboardViewBottom: {
+    justifyContent: 'flex-end',
+  },
+  overlay: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   popupContainer: {
     width: POPUP_WIDTH,
     maxWidth: 500,
+    height: POPUP_HEIGHT,
     overflow: 'hidden',
     backgroundColor: COLORS.white,
     borderRadius: 16,
@@ -65,8 +78,7 @@ export const styles = StyleSheet.create({
     color: COLORS.white,
   },
   textInput: {
-    minHeight: 200,
-    maxHeight: 400,
+    flex: 1,
     fontSize: 16,
     lineHeight: 24,
     color: COLORS.text,

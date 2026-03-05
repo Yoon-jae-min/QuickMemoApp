@@ -3,7 +3,7 @@ import { Memo } from '../types';
 import { STORAGE_KEYS, LIMITS } from '../constants';
 
 const { MEMOS: MEMOS_KEY, DRAFT: DRAFT_KEY } = STORAGE_KEYS;
-const { MAX_MEMOS, DRAFT_MAX_LENGTH } = LIMITS;
+const { MAX_MEMOS, DRAFT_MAX_LENGTH, MAX_DRAFTS, DRAFT_TTL_DAYS } = LIMITS;
 
 function isMemo(m: unknown): m is Memo {
   return (
@@ -79,34 +79,84 @@ export const clearAllMemos = async (): Promise<void> => {
 };
 
 export interface Draft {
+  id: string;
   content: string;
   savedAt: number;
 }
 
+function parseDrafts(data: string | null): Draft[] {
+  if (!data) return [];
+  try {
+    const parsed = JSON.parse(data);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (d): d is Draft =>
+          typeof d === 'object' &&
+          d !== null &&
+          typeof (d as Draft).id === 'string' &&
+          typeof (d as Draft).content === 'string' &&
+          typeof (d as Draft).savedAt === 'number',
+      )
+      .sort((a, b) => b.savedAt - a.savedAt);
+  } catch {
+    return [];
+  }
+}
+
+function cleanupDrafts(list: Draft[]): Draft[] {
+  const now = Date.now();
+  const ttlMs = DRAFT_TTL_DAYS * 24 * 60 * 60 * 1000;
+  const filtered = list.filter(d => now - d.savedAt <= ttlMs);
+  if (filtered.length > MAX_DRAFTS) {
+    return filtered.slice(0, MAX_DRAFTS);
+  }
+  return filtered;
+}
+
+export const getDrafts = async (): Promise<Draft[]> => {
+  try {
+    const data = await AsyncStorage.getItem(DRAFT_KEY);
+    const parsed = parseDrafts(data);
+    const cleaned = cleanupDrafts(parsed);
+    if (cleaned.length !== parsed.length) {
+      await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(cleaned));
+    }
+    return cleaned;
+  } catch (error) {
+    if (__DEV__) console.error('Error getting drafts:', error);
+    return [];
+  }
+};
+
 export const saveDraft = async (content: string): Promise<void> => {
   try {
-    if (!content.trim()) return;
     const trimmed = content.trim();
+    if (!trimmed) return;
     if (trimmed.length > DRAFT_MAX_LENGTH) return;
-    await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({
+
+    const current = await getDrafts();
+    const now = Date.now();
+    const newDraft: Draft = {
+      id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
       content: trimmed,
-      savedAt: Date.now(),
-    }));
+      savedAt: now,
+    };
+
+    const next = cleanupDrafts([newDraft, ...current]);
+    await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(next));
   } catch (error) {
     if (__DEV__) console.error('Error saving draft:', error);
   }
 };
 
-export const getDraft = async (): Promise<Draft | null> => {
+export const deleteDraft = async (id: string): Promise<void> => {
   try {
-    const data = await AsyncStorage.getItem(DRAFT_KEY);
-    if (!data) return null;
-    const parsed = JSON.parse(data);
-    if (typeof parsed?.content !== 'string' || typeof parsed?.savedAt !== 'number') return null;
-    return { content: parsed.content, savedAt: parsed.savedAt };
+    const drafts = await getDrafts();
+    const filtered = drafts.filter(d => d.id !== id);
+    await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(filtered));
   } catch (error) {
-    if (__DEV__) console.error('Error getting draft:', error);
-    return null;
+    if (__DEV__) console.error('Error deleting draft:', error);
   }
 };
 

@@ -7,9 +7,11 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Memo } from '../../types';
-import { saveMemo, clearAllMemos, getDraft, clearDraft } from '../../services/storage';
+import { saveMemo, clearAllMemos, saveDraft, clearDraft } from '../../services/storage';
 import { COLORS } from '../../constants';
 import { styles } from './styles';
 
@@ -19,20 +21,26 @@ export interface MemoPopupProps {
   editingMemo?: Memo | null;
   onClose: (hasUnsavedContent: boolean) => void;
   onShowList: () => void;
+  onShowDrafts: () => void;
   onShowSettings: () => void;
 }
 
 export const MemoPopup = React.forwardRef<
-  { getContent: () => string },
+  { getContent: () => string; setContent: (value: string) => void },
   MemoPopupProps
->(({ visible, editingMemo, onClose, onShowList, onShowSettings }, ref) => {
+>(({ visible, editingMemo, onClose, onShowList, onShowDrafts, onShowSettings }, ref) => {
   const [content, setContent] = useState('');
   const [hasUnsavedContent, setHasUnsavedContent] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   React.useImperativeHandle(
     ref,
     () => ({
       getContent: () => content,
+      setContent: (value: string) => {
+        setContent(value);
+        setHasUnsavedContent(value.trim().length > 0);
+      },
     }),
     [content],
   );
@@ -42,24 +50,26 @@ export const MemoPopup = React.forwardRef<
       return;
     }
 
-    // 편집 모드인 경우: 해당 메모 내용으로 채우고 임시저장은 무시
+    // 편집 모드인 경우: 해당 메모 내용으로 채우기
     if (editingMemo) {
       setContent(editingMemo.content);
       setHasUnsavedContent(false);
       return;
     }
 
-    // 새 메모 모드: 임시 저장된 내용 불러오기
-    getDraft().then((d) => {
-      if (d?.content) {
-        setContent(d.content);
-        setHasUnsavedContent(true);
-      } else {
-        setContent('');
-        setHasUnsavedContent(false);
-      }
-    });
+    // 새 메모 모드: 항상 빈 메모장으로 시작
+    setContent('');
+    setHasUnsavedContent(false);
   }, [visible, editingMemo]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleContentChange = useCallback((text: string) => {
     setContent(text);
@@ -131,26 +141,33 @@ export const MemoPopup = React.forwardRef<
   }, []);
 
   const handleBackdropPress = useCallback(() => {
-    if (hasUnsavedContent) {
-      Alert.alert(
-        '저장하지 않은 내용',
-        `저장하지 않은 내용이 있습니다:\n\n${content.substring(0, 100)}${content.length > 100 ? '...' : ''}\n\n정말 닫으시겠습니까?`,
-        [
-          { text: '취소', style: 'cancel' },
-          {
-            text: '닫기',
-            style: 'destructive',
-            onPress: () => {
-              setContent('');
-              setHasUnsavedContent(false);
-              onClose(false);
-            },
-          },
-        ]
-      );
-    } else {
+    if (!hasUnsavedContent) {
       onClose(false);
+      return;
     }
+
+    const preview = content.substring(0, 100) + (content.length > 100 ? '...' : '');
+
+    Alert.alert('임시 저장', `현재 내용을 임시 저장하시겠습니까?\n\n${preview}`, [
+      {
+        text: '아니요',
+        style: 'destructive',
+        onPress: () => {
+          setContent('');
+          setHasUnsavedContent(false);
+          onClose(false);
+        },
+      },
+      {
+        text: '예',
+        onPress: async () => {
+          await saveDraft(content);
+          setContent('');
+          setHasUnsavedContent(false);
+          onClose(false);
+        },
+      },
+    ]);
   }, [hasUnsavedContent, content, onClose]);
 
   if (!visible) return null;
@@ -158,34 +175,47 @@ export const MemoPopup = React.forwardRef<
   return (
     <View style={styles.popupOnly}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 16}
+        style={[styles.keyboardView, keyboardVisible && styles.keyboardViewBottom]}
       >
-        <View style={styles.popupContainer}>
-          <View style={styles.header}>
-            <TouchableOpacity style={[styles.button, styles.primaryButton]} onPress={handleSave}>
-              <Text style={[styles.buttonText, styles.primaryButtonText]}>저장</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={onShowList}>
-              <Text style={styles.buttonText}>목록</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={handleClear}>
-              <Text style={[styles.buttonText, styles.dangerText]}>전체 삭제</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={onShowSettings}>
-              <Text style={styles.buttonText}>설정</Text>
-            </TouchableOpacity>
+        <TouchableWithoutFeedback onPress={handleBackdropPress}>
+          <View style={styles.overlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={styles.popupContainer}>
+                <View style={styles.header}>
+                  <TouchableOpacity
+                    style={[styles.button, styles.primaryButton]}
+                    onPress={handleSave}
+                  >
+                    <Text style={[styles.buttonText, styles.primaryButtonText]}>저장</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.button} onPress={onShowList}>
+                    <Text style={styles.buttonText}>목록</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.button} onPress={onShowDrafts}>
+                    <Text style={styles.buttonText}>임시</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.button} onPress={handleClear}>
+                    <Text style={[styles.buttonText, styles.dangerText]}>삭제</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.button} onPress={onShowSettings}>
+                    <Text style={styles.buttonText}>설정</Text>
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={styles.textInput}
+                  multiline
+                  placeholder="메모를 입력하세요..."
+                  placeholderTextColor={COLORS.textPlaceholder}
+                  value={content}
+                  onChangeText={handleContentChange}
+                  textAlignVertical="top"
+                />
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-          <TextInput
-            style={styles.textInput}
-            multiline
-            placeholder="메모를 입력하세요..."
-            placeholderTextColor={COLORS.textPlaceholder}
-            value={content}
-            onChangeText={handleContentChange}
-            textAlignVertical="top"
-          />
-        </View>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </View>
   );

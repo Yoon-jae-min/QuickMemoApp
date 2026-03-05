@@ -4,11 +4,22 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { StatusBar, StyleSheet, useColorScheme, View, TouchableOpacity, NativeModules, AppState, BackHandler } from 'react-native';
+import {
+  StatusBar,
+  StyleSheet,
+  useColorScheme,
+  View,
+  TouchableOpacity,
+  NativeModules,
+  AppState,
+  BackHandler,
+  Alert,
+} from 'react-native';
 import { MemoPopup } from './src/components/MemoPopup';
 import { MemoList } from './src/components/MemoList';
+import { DraftList } from './src/components/DraftList';
 import { Settings } from './src/components/Settings';
-import { saveDraft, clearDraft } from './src/services/storage';
+import { saveDraft, clearDraft, Draft } from './src/services/storage';
 import { Memo } from './src/types';
 
 const { AppExitModule } = NativeModules;
@@ -19,6 +30,7 @@ function App() {
   const [memoPopupVisible, setMemoPopupVisible] = useState(true);
   const [memoListVisible, setMemoListVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [draftListVisible, setDraftListVisible] = useState(false);
   const [editingMemo, setEditingMemo] = useState<Memo | null>(null);
 
   const handleShowList = useCallback(() => {
@@ -48,12 +60,28 @@ function App() {
     setMemoPopupVisible(true);
   }, []);
 
+  const handleShowDrafts = useCallback(() => {
+    setDraftListVisible(true);
+  }, []);
+
+  const handleCloseDrafts = useCallback(() => {
+    setDraftListVisible(false);
+  }, []);
+
+  const handleSelectDraft = useCallback(
+    (draft: Draft) => {
+      setEditingMemo(null);
+      setDraftListVisible(false);
+      setMemoPopupVisible(true);
+      memoPopupRef.current?.setContent?.(draft.content);
+    },
+    [],
+  );
+
   const saveDraftAndExit = useCallback(async () => {
     const content = memoPopupRef.current?.getContent?.() ?? '';
     if (content.trim()) {
       await saveDraft(content);
-    } else {
-      await clearDraft();
     }
   }, []);
 
@@ -69,13 +97,41 @@ function App() {
 
   useEffect(() => {
     const onBack = () => {
-      saveDraftAndExit();
-      if (AppExitModule) AppExitModule.exitApp();
+      const currentContent = memoPopupRef.current?.getContent?.() ?? '';
+      const trimmed = currentContent.trim();
+
+      if (!trimmed) {
+        if (AppExitModule) AppExitModule.exitApp();
+        return true;
+      }
+
+      const preview = trimmed.substring(0, 100) + (trimmed.length > 100 ? '...' : '');
+
+      Alert.alert('임시 저장', `현재 내용을 임시 저장하시겠습니까?\n\n${preview}`, [
+        {
+          text: '아니요',
+          style: 'destructive',
+          onPress: () => {
+            memoPopupRef.current?.setContent?.('');
+            if (AppExitModule) AppExitModule.exitApp();
+          },
+        },
+        {
+          text: '예',
+          onPress: async () => {
+            await saveDraft(trimmed);
+            memoPopupRef.current?.setContent?.('');
+            if (AppExitModule) AppExitModule.exitApp();
+          },
+        },
+      ]);
+
       return true;
     };
+
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBack);
     return () => subscription.remove();
-  }, [saveDraftAndExit]);
+  }, []);
 
   const handleBackgroundPress = useCallback(async () => {
     await saveDraftAndExit();
@@ -108,6 +164,7 @@ function App() {
               }
             }}
             onShowList={handleShowList}
+            onShowDrafts={handleShowDrafts}
             onShowSettings={handleShowSettings}
           />
         </TouchableOpacity>
@@ -116,10 +173,18 @@ function App() {
         visible={memoListVisible}
         onClose={handleCloseList}
         onSelect={handleEditMemo}
+        onBackgroundPress={handleBackgroundPress}
+      />
+      <DraftList
+        visible={draftListVisible}
+        onClose={handleCloseDrafts}
+        onSelect={handleSelectDraft}
+        onBackgroundPress={handleBackgroundPress}
       />
       <Settings
         visible={settingsVisible}
         onClose={handleCloseSettings}
+        onBackgroundPress={handleBackgroundPress}
       />
     </TouchableOpacity>
   );

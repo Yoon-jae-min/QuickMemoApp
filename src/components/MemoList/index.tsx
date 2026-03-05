@@ -10,9 +10,15 @@ interface MemoListProps {
   visible: boolean;
   onClose: () => void;
   onSelect: (memo: Memo) => void;
+  onBackgroundPress: () => void;
 }
 
-export const MemoList: React.FC<MemoListProps> = ({ visible, onClose, onSelect }) => {
+export const MemoList: React.FC<MemoListProps> = ({
+  visible,
+  onClose,
+  onSelect,
+  onBackgroundPress,
+}) => {
   const [memos, setMemos] = useState<Memo[]>([]);
 
   const loadMemos = useCallback(async () => {
@@ -54,7 +60,12 @@ export const MemoList: React.FC<MemoListProps> = ({ visible, onClose, onSelect }
   );
 
   return (
-    <BottomSheet visible={visible} title="저장된 메모" onClose={onClose}>
+    <BottomSheet
+      visible={visible}
+      title="저장된 메모"
+      onClose={onClose}
+      onBackdropPress={onBackgroundPress}
+    >
       {memos.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>메모가 없어요</Text>

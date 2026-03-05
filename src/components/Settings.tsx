@@ -6,13 +6,14 @@ import { COLORS } from '../constants';
 interface SettingsProps {
   visible: boolean;
   onClose: () => void;
+  onBackgroundPress: () => void;
 }
 
 const styles = StyleSheet.create({
   content: {
-    flex: 1,
     padding: 20,
     paddingBottom: 32,
+    flexGrow: 1,
   },
   section: {
     marginBottom: 24,
@@ -44,13 +45,22 @@ const styles = StyleSheet.create({
   },
 });
 
-export const Settings: React.FC<SettingsProps> = ({ visible, onClose }) => (
-  <BottomSheet visible={visible} title="설정" onClose={onClose}>
-    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+export const Settings: React.FC<SettingsProps> = ({ visible, onClose, onBackgroundPress }) => (
+  <BottomSheet
+    visible={visible}
+    title="설정"
+    onClose={onClose}
+    onBackdropPress={onBackgroundPress}
+  >
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>앱 정보</Text>
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionText}>QuickMemo v1.0.0</Text>
+          <Text style={styles.sectionText}>QuickMemo v1.2.0</Text>
           <Text style={styles.sectionTextMuted}>빠르고 간편한 메모 앱입니다.</Text>
         </View>
       </View>

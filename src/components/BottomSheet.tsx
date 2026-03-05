@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { COLORS } from '../constants';
 
 interface BottomSheetProps {
@@ -8,6 +8,8 @@ interface BottomSheetProps {
   onClose: () => void;
   children: React.ReactNode;
   closeLabel?: string;
+  /** 배경(오버레이) 터치 시 호출. 없으면 onClose 사용 */
+  onBackdropPress?: () => void;
 }
 
 const styles = StyleSheet.create({
@@ -63,7 +65,10 @@ export function BottomSheet({
   onClose,
   children,
   closeLabel = '닫기',
+  onBackdropPress,
 }: BottomSheetProps) {
+  const handleBackdrop = onBackdropPress ?? onClose;
+
   return (
     <Modal
       visible={visible}
@@ -71,17 +76,21 @@ export function BottomSheet({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.7}>
-              <Text style={styles.closeButtonText}>{closeLabel}</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.content}>{children}</View>
+      <TouchableWithoutFeedback onPress={handleBackdrop}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback onPress={() => {}}>
+            <View style={styles.container}>
+              <View style={styles.header}>
+                <Text style={styles.title}>{title}</Text>
+                <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.7}>
+                  <Text style={styles.closeButtonText}>{closeLabel}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.content}>{children}</View>
+            </View>
+          </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }

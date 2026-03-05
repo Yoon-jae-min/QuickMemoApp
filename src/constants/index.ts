@@ -10,6 +10,8 @@ export const STORAGE_KEYS = {
 export const LIMITS = {
   MAX_MEMOS: 500,
   DRAFT_MAX_LENGTH: 100_000,
+  MAX_DRAFTS: 20,
+  DRAFT_TTL_DAYS: 7,
 } as const;
 
 export const COLORS = {
